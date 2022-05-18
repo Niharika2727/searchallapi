@@ -1,0 +1,95 @@
+#%RAML 1.0
+title: searchAllFlights
+baseUri: http://localhost:8081
+/searchAllFlights:
+  get:
+   queryParameters:
+    source:
+      example: HYD
+    destination:
+      example: BANG
+    doj:
+      example: 31-Mar-2022
+   responses:
+    200:
+      body:
+        application/json:
+          example:
+            {
+    "indigoairlines": [
+        {
+            "ID": 101,
+            "airline": "Indigo",
+            "flightCode": "IND101",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": 0,
+            "totalSeats": 200,
+            "price": 199,
+            "planeType": "Indigo 737"
+        },
+        {
+            "ID": 102,
+            "airline": "Indigo",
+            "flightCode": "IND102",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": 24,
+            "totalSeats": 350,
+            "price": 450,
+            "planeType": "Indigo 747"
+        },
+        {
+            "ID": 103,
+            "airline": "Indigo",
+            "flightCode": "IND103",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": 33,
+            "totalSeats": 400,
+            "price": 450,
+            "planeType": "Indigo 757"
+        }
+    ],
+    "airindialines": [
+        {
+            "ID": "201",
+            "flightCode": "AirIndia",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "airline": "AirIndia",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": "0",
+            "totalSeats": 200,
+            "price": "199",
+            "planeType": "AirIndia 737"
+        },
+        {
+            "ID": "202",
+            "flightCode": "AirIndia",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "airline": "AirIndia",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": "24",
+            "totalSeats": 350,
+            "price": "450",
+            "planeType": "AirIndia 747"
+        },
+        {
+            "ID": "203",
+            "flightCode": "AirIndia",
+            "fromAirportCode": "HYD",
+            "toAirportCode": "BANG",
+            "airline": "AirIndia",
+            "departureDate": "31-Mar-2022",
+            "emptySeats": "33",
+            "totalSeats": 400,
+            "price": "450",
+            "planeType": "AirIndia 757"
+        }
+    ]
+} 

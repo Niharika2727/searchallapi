@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="a63d8ab4-7c8b-4fb6-8512-fd73b7987536" >
+		<http:request-connection host="indigo-services.us-e2.cloudhub.io" port="80" />
+	</http:request-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="f90499a4-f3af-43c7-95dd-03d33ca502cb" >
+		<wsc:connection wsdlLocation="http://airindia-services.us-e2.cloudhub.io/airindia?wsdl" service="TicketServiceService" port="TicketServicePort" address="http://airindia-services.us-e2.cloudhub.io/airindia" />
+	</wsc:config>
+	<flow name="searchallFlow" doc:id="e194d2c0-02ed-4183-bdf3-997dcbfe0d9d" >
+		<logger level="INFO" doc:name="Logger" doc:id="729a928f-c191-43f1-b465-ab3448afbfdf" message="Request recieved"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="2de5f524-a2e5-43a6-a3c5-facb1955cf0f" >
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="80ddd4cf-43ac-40a3-bd17-d5539e9bde86" />
+				<try doc:name="Try" doc:id="d6d00dd4-293c-4919-b1ef-998210eaa8b2" >
+					<http:request method="GET" doc:name="Request" doc:id="8cf0e4d6-30cc-4c0c-b415-e4d34e520ddb" config-ref="HTTP_Request_configuration" path="/api/getFlights">
+					<http:query-params><![CDATA[#[output application/java
+---
+{
+	from : attributes.queryParams.source,
+	to : attributes.queryParams.destination,
+	depatureDate : attributes.queryParams.doj
+}]]]></http:query-params>
+				</http:request>
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3fcf8752-28f0-4234-9629-e631cdb98be8" >
+							<ee:transform doc:name="Transform Message" doc:id="4b84d1aa-bbb0-42a5-bbee-702a471d4d19" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	
+	"message" : "server is down"
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</route>
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="ab8daa14-3fb8-4be9-aaa5-09ecdfd33955" />
+				<ee:transform doc:name="Transform Message" doc:id="d5d7bb0d-3464-40a0-b5bc-9edb6b613a14">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://soap.training.mulesoft.com/
+---
+{
+	ns0#getFlights: {
+		from: attributes.queryParams.source as String,
+		to: attributes.queryParams.destination as String,
+		depatureDate: attributes.queryParams.doj as String
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<wsc:consume operation="getFlights" doc:name="Consume" doc:id="ab85798c-c079-472c-91d7-14e1224cd891" config-ref="Web_Service_Consumer_Config"/>
+				<ee:transform doc:name="Transform Message" doc:id="ed326812-10cc-4025-a60f-8ebef3221b39" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://soap.training.mulesoft.com/
+---
+payload.body.ns0#getFlightsResponse.*return map ( return , indexOfReturn ) -> {
+	ID: return.ID default 0,
+	flightCode: return.airline default "",
+	fromAirportCode: return.fromAirportCode default "",
+	toAirportCode: return.toAirportCode default "",
+	airline: return.airline default "",
+	departureDate: return.departureDate default "",
+	emptySeats: return.emptySeats default 0,
+	totalSeats: return.totalSeats as Number default 0,
+	price: return.price default 0,
+	planeType: return.planeType default ""
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="08e6aa53-ecb4-4301-aff2-5ea5ce783878" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	indigoairlines: payload[0].payload,
+	airindialines: payload[1].payload
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c072d237-741a-4679-8900-4a34a1b8e19c" >
+				<ee:transform doc:name="Transform Message" doc:id="1fa6e43d-6631-4883-9258-5a4f31dad6ac" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+error.description]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
